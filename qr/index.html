@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>電子署名体験ツール TrustQR検証</title>
+</head><body>
+<h1>電子署名体験ツール TrustQR検証</h1>
+<main>
+
+<section>
+<div>
+<span>TrustQR</span><span id=qrspan></span>
+<span>文章</span><textarea id="intext2"></textarea>
+<span>電子署名</span><textarea id="insign2"></textarea>
+<span>公開鍵</span><input id="inpubkey2">
+<span>検証結果</span><input id="inverify">
+</div>
+</section>
+  
+</main>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a>
+    
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { coder } from "../coder.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+
+const verifyByHash = (hash) => {
+  const data = hash.substring(1);
+  const len = coder.encode(new Uint8Array(32)).length;
+  let p = data.length - len * 3;
+  const text = coder.decode(data.substring(0, p));
+  const pubkey = coder.decode(data.substring(p, p + len));
+  const sign = coder.decode(data.substring(p + len));
+  const b = sec.verify(sign, pubkey, text);
+  intext2.value = new TextDecoder().decode(text);
+  inpubkey2.value = coder.encode(pubkey);
+  insign2.value = coder.encode(sign);
+  inverify.value = b ? "OK! 検証できました" : "エラー! 検証できませんでした";
+};
+
+qrspan.appendChild(new QRCode());
+verifyByHash(location.hash);
+
+</script>
+<style>
+body {
+  font-family: sans-serif;
+}
+input {
+  width: 100%;
+}
+textarea {
+  width: 100%;
+  height: 5em;
+}
+section {
+  border: 2px solid #333;
+  margin: 1em;
+  padding: 1em;
+}
+section > * {
+  margin: .3em 0;
+}
+section > div {
+  display: grid;
+  grid-template-columns: 5em 1fr;
+  gap: .5em 0;
+}
+</style>
+
+</body>
+</html>
+
