@@ -8,10 +8,10 @@
 <main>
 <section>
 <div>
-<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
 <span>秘密鍵</span><input-text id="inprikey" class="bin" type="password"></input-text>
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
 </div>
-<button id=btngen>公開鍵と秘密鍵を生成する</button><br>
+<button id=btngen>公開鍵と秘密鍵を生成する</button> ※秘密鍵をメモしておけば公開鍵は復元できます<br>
 </section>
 
 <section>
@@ -24,10 +24,10 @@
 
 </main>
 
-→ <a href=../experience.html>電子署名体験ツール</a><br>
+参考、<a href=../experience.html>電子署名と検証を体験するアプリ</a><br>
 
 <hr>
-Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a><br>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a>, <a href=https://github.com/code4fukui/Base32/>Base32</a>, <a href=https://github.com/code4fukui/input-text/>input-text</a>, <a href=https://github.com/code4fukui/qr-code/>qr-code</a><br>
 <a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
 <qr-code></qr-code><br>
 
@@ -47,6 +47,14 @@ btngen.onclick = async () => {
   const pubkey = sec.pubkey(prikey);
   inpubkey.value = coder.encode(pubkey);
   inprikey.value = coder.encode(prikey);
+  localStorage.setItem("pubkey", inpubkey.value);
+  localStorage.setItem("prikey", inprikey.value);
+  intext.oninput();
+};
+inprikey.oninput = () => {
+  const prikey = coder.decode(inprikey.value);
+  const pubkey = sec.pubkey(prikey);
+  inpubkey.value = coder.encode(pubkey);
   localStorage.setItem("pubkey", inpubkey.value);
   localStorage.setItem("prikey", inprikey.value);
   intext.oninput();
