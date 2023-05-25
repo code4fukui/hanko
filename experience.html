@@ -1,56 +1,64 @@
 <!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
-<title>電子署名体験ツール</title>
+<title>電子署名と検証を体験するアプリ</title>
 <link rel="stylesheet" href="style.css">
 </head><body>
 <script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
 
-<h1>電子署名体験ツール</h1>
+<h1>電子署名と検証を体験するアプリ</h1>
 <main>
-<section>
-1. 公開鍵と秘密鍵を生成する<br>
-<button id=btngen>公開鍵と秘密鍵を生成する</button><br>
+
+  <section>
+1. <button id=btngen>秘密鍵を生成する</button> ※秘密鍵は、10進法78桁の乱数です。自分だけの秘密にします。（<a href=https://fukuno.jig.jp/3955>Base32</a>形式にしています）<br>
 <div>
-<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
 <span>秘密鍵</span><input-text id="inprikey" class="bin"></input-text>
 </div>
 </section>
 
 <section>
-2. 文章を書く<br>
+2. <button id=btngen2>公開鍵を生成する</button> ※公開鍵は、秘密鍵とペアになりますが、公開鍵から秘密鍵は推測不可能なので、誰に見せても大丈夫です<br>
+<div>
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+</div>
+</section>
+  
+<section>
+3. 電子署名したい文章を書く<br>
 <div>
 <span>文章</span><input-text id="intext"></input-text>
 </div>
 </section>
 
 <section>
-3. 電子署名を生成する<br>
-<button id=btnsign>電子署名を生成する</button><br>
+4. <button id=btnsign>電子署名を生成する</button> ※秘密鍵によって生成されるのであなたが書いた証明となります<br>
 <div>
 <span>電子署名</span><input-text id="insign" class="bin"></input-text>
 </div>
 </section>
 
 <section>
-4. 文章と公開鍵と電子署名を受け取る<br>
-<button id=btncopy>上記の文書と公開鍵と電子署名をコピー</button><br>
+5. 公開鍵、文章、電子署名を受け取る<br>
+<button id=btncopy>上記の公開鍵、文書、電子署名をコピーする</button><br>
 <div>
-<span>文章</span><input-text id="intext2"></input-text>
 <span>公開鍵</span><input-text id="inpubkey2" class="bin"></input-text>
+<span>文章</span><input-text id="intext2"></input-text>
 <span>電子署名</span><input-text id="insign2" class="bin"></input-text>
 </div>
 </section>
 
 <section>
-5. 検証する<br>
-<button id=btnverify>検証する</button><br>
+6. <button id=btnverify>検証する</button> ※この文章と電子署名が公開鍵のペアである秘密鍵を持つ人によって生成されたものかを計算し、検証します<br>
 <div>
 <span>検証結果</span><input-text id="inverify"></input-text>
 </div>
 </section>
+
+<section>
+7. 5の公開鍵、文章、電子署名のいずれかを書き換えて、検証が失敗することを確認する<br>
+</section>
   
 </main>
 
-→ <a href=../>電子署名ツール</a><br>
+→ <a href=../>Hanko 電子署名ツール</a><br>
 
 <hr>
 Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a><br>
@@ -67,11 +75,12 @@ import { coder } from "./coder.js";
 
 btngen.onclick = async () => {
   const prikey = sec.prikey();
+  inprikey.value = coder.encode(prikey);
+};
+btngen2.onclick = async () => {
+  const prikey = coder.decode(inprikey.value);
   const pubkey = sec.pubkey(prikey);
   inpubkey.value = coder.encode(pubkey);
-  inprikey.value = coder.encode(prikey);
-  //localStorage.setItem("pubkey", inpubkey.value);
-  //localStorage.setItem("prikey", inprikey.value);
 };
 btnsign.onclick = async () => {
   const prikey = coder.decode(inprikey.value);
