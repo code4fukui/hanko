@@ -57,7 +57,7 @@ intext.oninput = intext.onkeyup = async () => {
   const text = new TextEncoder().encode(intext.value);
   const sign = sec.sign(prikey, text);
   insign.value = coder.encode(sign);
-  const url = location.href.toUpperCase() + "qr/#" + coder.encode(text, false) + coder.encode(pubkey, false) + coder.encode(sign, false);
+  const url = location.href + "qr/#" + coder.encode(text, false) + coder.encode(pubkey, false) + coder.encode(sign, false);
   qrspan.innerHTML = "";
   const a = document.createElement("a");
   a.href = url;
