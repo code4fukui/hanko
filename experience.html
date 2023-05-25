@@ -1,0 +1,110 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>電子署名体験ツール</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
+
+<h1>電子署名体験ツール</h1>
+<main>
+<section>
+1. 公開鍵と秘密鍵を生成する<br>
+<button id=btngen>公開鍵と秘密鍵を生成する</button><br>
+<div>
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+<span>秘密鍵</span><input-text id="inprikey" class="bin"></input-text>
+</div>
+</section>
+
+<section>
+2. 文章を書く<br>
+<div>
+<span>文章</span><input-text id="intext"></input-text>
+</div>
+</section>
+
+<section>
+3. 電子署名を生成する<br>
+<button id=btnsign>電子署名を生成する</button><br>
+<div>
+<span>電子署名</span><input-text id="insign" class="bin"></input-text>
+</div>
+</section>
+
+<section>
+4. 文章と公開鍵と電子署名を受け取る<br>
+<button id=btncopy>上記の文書と公開鍵と電子署名をコピー</button><br>
+<div>
+<span>文章</span><input-text id="intext2"></input-text>
+<span>公開鍵</span><input-text id="inpubkey2" class="bin"></input-text>
+<span>電子署名</span><input-text id="insign2" class="bin"></input-text>
+</div>
+</section>
+
+<section>
+5. 検証する<br>
+<button id=btnverify>検証する</button><br>
+<div>
+<span>検証結果</span><input-text id="inverify"></input-text>
+</div>
+</section>
+  
+</main>
+
+→ <a href=../>電子署名ツール</a><br>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
+<qr-code></qr-code><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+import { coder } from "./coder.js";
+
+//inpubkey.value = localStorage.getItem("pubkey") || "";
+//inprikey.value = localStorage.getItem("prikey") || "";
+
+btngen.onclick = async () => {
+  const prikey = sec.prikey();
+  const pubkey = sec.pubkey(prikey);
+  inpubkey.value = coder.encode(pubkey);
+  inprikey.value = coder.encode(prikey);
+  //localStorage.setItem("pubkey", inpubkey.value);
+  //localStorage.setItem("prikey", inprikey.value);
+};
+btnsign.onclick = async () => {
+  const prikey = coder.decode(inprikey.value);
+  const pubkey = coder.decode(inpubkey.value);
+  const text = new TextEncoder().encode(intext.value);
+  const sign = sec.sign(prikey, text);
+  insign.value = coder.encode(sign);
+  /*
+  const url = location.href.toUpperCase() + "qr/#" + coder.encode(text, false) + coder.encode(pubkey, false) + coder.encode(sign, false);
+  qrspan.innerHTML = "";
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  const qr = new QRCode(url);
+  a.appendChild(qr);
+  qrspan.appendChild(a);
+  */
+};
+btncopy.onclick = () => {
+  intext2.value = intext.value;
+  insign2.value = insign.value;
+  inpubkey2.value = inpubkey.value;
+};
+btnverify.onclick = async () => {
+  const text = new TextEncoder().encode(intext2.value);
+  const len = coder.encode(new Uint8Array(32)).length;
+  const pubkey = coder.decode(inpubkey2.value);
+  const sign = coder.decode(insign2.value);
+  const b = sec.verify(sign, pubkey, text);
+  inpubkey2.value = coder.encode(pubkey);
+  inverify.value = b ? "検証できました" : "エラー! 検証できませんでした";
+};
+</script>
+
+</body>
+</html>
