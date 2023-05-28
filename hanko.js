@@ -3,10 +3,10 @@ import { coder } from "./coder.js";
 
 export const parseSign = () => {
   const data = location.hash.substring(1);
-  console.log(data);
   if (!data) {
     return;
   }
+  location = location.href.replace(/#.*$/, ""); // delete hash
   const len = coder.encode(new Uint8Array(32), false).length;
   const len2 = coder.encode(new Uint8Array(64), false).length;
   const p = data.length - len - len2;
