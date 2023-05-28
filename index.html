@@ -19,6 +19,7 @@
 <span>文章</span><input-text id="intext"></input-text>
 <span>電子署名</span><input-text id="insign" class="bin"></input-text>
 <span>Hanko</span><span id=qrspan></span>
+<span>URL</span><span id=urlspan></span>
 </div>
 </section>
 
@@ -38,6 +39,13 @@ import { coder } from "./coder.js";
 
 inpubkey.value = localStorage.getItem("pubkey") || "";
 inprikey.value = localStorage.getItem("prikey") || "";
+
+const base = location.hash ? location.href.substring(0, location.hash.indexOf("#")) : location.href;
+const baseurl = base + "qr/";
+
+const param = location.hash.substring(1).split(",");
+intext.value = decodeURIComponent(param[0]);
+const returl = decodeURIComponent(param[1]) || baseurl;
 
 btngen.onclick = async () => {
   if (inprikey.value && !confirm("現在設定されている秘密鍵を消して、生成しなおしますか？")) {
@@ -64,8 +72,10 @@ intext.oninput = intext.onkeyup = async () => {
   const pubkey = coder.decode(inpubkey.value);
   const text = new TextEncoder().encode(intext.value);
   const sign = sec.sign(prikey, text);
+  console.log(pubkey, sign, text);
   insign.value = coder.encode(sign);
-  const url = location.href + "qr/#" + coder.encode(text, false) + coder.encode(pubkey, false) + coder.encode(sign, false);
+  console.log(returl);
+  const url = returl + "#" + coder.encode(text, false) + coder.encode(pubkey, false) + coder.encode(sign, false);
   qrspan.innerHTML = "";
   const a = document.createElement("a");
   a.href = url;
@@ -73,6 +83,13 @@ intext.oninput = intext.onkeyup = async () => {
   const qr = new QRCode(url);
   a.appendChild(qr);
   qrspan.appendChild(a);
+
+  const a2 = document.createElement("a");
+  a2.href = a2.textContent = url;
+  a2.target = "_blank";
+  a2.style.wordBreak = "break-all";
+  urlspan.appendChild(a2);
+ 
 };
 intext.oninput();
 </script>
