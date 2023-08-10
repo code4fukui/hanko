@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>ファイルをハッシュ化するアプリ</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
+
+<h1>ファイルをハッシュ化するアプリ</h1>
+<main id=main>
+</main>
+<textarea id=out style="width:70vw">
+</textarea><br>
+
+→ <a href=./>Hanko 電子署名ツール</a><br>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
+<qr-code></qr-code><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+import { coder } from "./coder.js";
+import { Base64 } from "https://code4fukui.github.io/Base64/Base64.js";
+import { waitDropFiles } from "https://js.sabae.cc/waitDropFiles.js";
+import { SHA512 } from "https://code4fukui.github.io/SHA512/SHA512.js"
+
+const waitFileRead = async (f) => {
+	return new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onerror = (e) => {
+			reject(e);
+		};
+		reader.onload = (e) => {
+      const s = e.target.result.substring("data:text/html;base64,".length);
+      const bin = Base64.decode(s);
+			resolve(bin);
+		};
+		reader.readAsDataURL(f);
+	});
+};
+
+for (;;) {
+  const files = await waitDropFiles(document.body);
+  //assert(files.length == 1, "ファイルは1つだけ");
+  const file = files[0];
+  //assert(file.type.startsWith("image/"), "画像ファイルじゃないよ");
+  const bin = await waitFileRead(file.file);
+  console.log(bin);
+  const hash = SHA512.digest(bin);
+  out.value = coder.encode(hash);
+}
+
+</script>
+
+</body>
+</html>
