@@ -17,11 +17,11 @@ section {
   padding: 1em;
 }
 section > * {
-  margin: .3em 0;
+  margin: .3em .3em;
 }
 section > div {
   display: grid;
   align-content: center;
   grid-template-columns: 5em 1fr;
-  gap: .5em 0;
+  gap: .5em;
 }

@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>Hanko 電子署名ツール</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
+
+<h1>Hanko 電子署名ツール</h1>
+<main>
+
+<section>
+<h2>2. 証明書登録</h2>
+秘密鍵ファイル(name.seckey.ini)をここにドロップしてください<br>
+<div>
+<span>名前</span><input id="inname" class="bin">
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+</div>
+市役所から受け取った証明書ファイル(name.pubkey.ini.hanko.ini)をここにドロップしてください<br>
+<!--<button id=btndl1>秘密にする、証明書付き秘密鍵ファイル(名前.seckey.ini)をダウンロードする（元のファイルに上書きしてください）</button><br>-->
+</section>
+
+</main>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a>, <a href=https://github.com/code4fukui/Base32/>Base32</a>, <a href=https://github.com/code4fukui/input-text/>input-text</a>, <a href=https://github.com/code4fukui/qr-code/>qr-code</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
+<qr-code></qr-code><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+import { coder } from "./coder.js";
+import { INI } from "https://code4fukui.github.io/INI/INI.js";
+import { downloadFile } from "https://js.sabae.cc/downloadFile.js";
+import { XOR } from "https://code4fukui.github.io/XOR/XOR.js";
+import { setDropFilesListener } from "https://js.sabae.cc/setDropFilesListener.js";
+import { readAsArrayBufferAsync } from "https://code4sabae.github.io/js/readAsArrayBufferAsync.js";
+
+let secini = null;
+setDropFilesListener(document.body, async (files) => {
+  const file = files[0];
+  if (file.file.name.indexOf("seckey") >= 0) {
+    const bin = await readAsArrayBufferAsync(file.file);
+    const txt = new TextDecoder().decode(bin);
+    const ini = INI.parse(txt);
+
+    inname.value = ini.name;
+    inpubkey.value = ini.pubkey;
+    secini = ini;
+  } else if (file.file.name.indexOf("certificate") >= 0) {
+    const bin = await readAsArrayBufferAsync(file.file);
+    const txt = new TextDecoder().decode(bin);
+    const ini = INI.parse(txt);
+    console.log(ini);
+
+    const data = {
+      name: secini.name,
+      pubkey: secini.pubkey,
+      encrypt_seckey: secini.encrypt_seckey,
+      certificate: ini.certificate,
+    };
+    console.log(data);
+    const ini2 = INI.stringify(data);
+    console.log(ini2);
+    await downloadFile(secini.name + ".seckey.ini", ini2);
+  } else {
+    alert("無効なファイルです");
+  }
+});
+
+</script>
+
+</body>
+</html>

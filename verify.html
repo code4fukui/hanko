@@ -1,0 +1,83 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>Hanko 電子署名ツール</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
+
+<h1>Hanko 電子署名ツール</h1>
+<main>
+
+<section>
+<h2>4. 検証</h2>
+電子署名ファイル(name.hanko.ini)をここにドロップしてください<br>
+<div>
+<span>名前</span><input id="inname" class="bin">
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+</div>
+電子署名されたファイルをここにドロップしてください<br>
+<div>
+<span>ハッシュ</span><input-text id="inhash" class="bin"></input-text>
+<span>長さ</span><input id="inlen" class="bin">
+<span>検証結果</span><input id=out_verify>
+<!--
+<button id=btndl1>署名する (名前.hanko.ini をダウンロード)</button><br>
+-->
+</section>
+
+</main>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a>, <a href=https://github.com/code4fukui/Base32/>Base32</a>, <a href=https://github.com/code4fukui/input-text/>input-text</a>, <a href=https://github.com/code4fukui/qr-code/>qr-code</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
+<qr-code></qr-code><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+import { coder } from "./coder.js";
+import { INI } from "https://code4fukui.github.io/INI/INI.js";
+import { downloadFile } from "https://js.sabae.cc/downloadFile.js";
+import { XOR } from "https://code4fukui.github.io/XOR/XOR.js";
+import { setDropFilesListener } from "https://js.sabae.cc/setDropFilesListener.js";
+import { readAsArrayBufferAsync } from "https://code4sabae.github.io/js/readAsArrayBufferAsync.js";
+import { SHA512 } from "https://code4fukui.github.io/SHA512/SHA512.js"
+import { DateTime } from "https://js.sabae.cc/DateTime.js";
+
+let pubini = null;
+
+setDropFilesListener(document.body, async (files) => {
+  const file = files[0];
+  if (file.file.name.indexOf("hanko") >= 0) {
+    const bin = await readAsArrayBufferAsync(file.file);
+    const txt = new TextDecoder().decode(bin);
+    const ini = INI.parse(txt);
+
+    inname.value = ini.signature.name;
+    inpubkey.value = ini.signature.pubkey;
+    pubini = ini;
+  } else {
+    const bin = new Uint8Array(await readAsArrayBufferAsync(file.file));
+    inhash.value = coder.encode(SHA512.digest(bin));
+    console.log(bin, bin.length);
+    inlen.value = bin.length;
+
+    const sign = coder.decode(pubini.signature.signature);
+    const pubkey = coder.decode(pubini.signature.pubkey);
+    const d = pubini.data;
+    const data = {
+      body: `file(${inhash.value},${inlen.value})に同意しました`,
+      signer: d.signer,
+      certificate: d.certificate,
+      date: d.date,
+      expiredate: d.expiredate,
+    };
+    console.log(pubini.data)
+
+    const verify = sec.verify(sign, pubkey, new TextEncoder().encode(JSON.stringify(data)));
+    out_verify.value = verify ? "OK! 検証できました" : "NG... 検証できませんでした";
+  }
+});
+</script>
+
+</body>
+</html>

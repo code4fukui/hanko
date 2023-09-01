@@ -1,0 +1,147 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>Hanko 電子署名ツール</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
+
+<h1>Hanko 電子署名ツール</h1>
+<main>
+
+<section>
+<h2>3. 電子署名</h2>
+秘密鍵ファイル(name.seckey.ini)をここにドロップしてください<br>
+<div>
+<span>名前</span><input id="inname" class="bin">
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+</div>
+電子署名するファイルをここにドロップしてください<br>
+<div>
+<span>ハッシュ</span><input-text id="inhash" class="bin"></input-text>
+<span>長さ</span><input id="inlen" class="bin">
+</div>
+<!--
+<button id=btndl1>署名する (名前.hanko.ini をダウンロード)</button><br>
+-->
+</section>
+
+</main>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a>, <a href=https://github.com/code4fukui/Base32/>Base32</a>, <a href=https://github.com/code4fukui/input-text/>input-text</a>, <a href=https://github.com/code4fukui/qr-code/>qr-code</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
+<qr-code></qr-code><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+import { coder } from "./coder.js";
+import { INI } from "https://code4fukui.github.io/INI/INI.js";
+import { downloadFile } from "https://js.sabae.cc/downloadFile.js";
+import { XOR } from "https://code4fukui.github.io/XOR/XOR.js";
+import { setDropFilesListener } from "https://js.sabae.cc/setDropFilesListener.js";
+import { readAsArrayBufferAsync } from "https://code4sabae.github.io/js/readAsArrayBufferAsync.js";
+import { SHA512 } from "https://code4fukui.github.io/SHA512/SHA512.js"
+import { DateTime } from "https://js.sabae.cc/DateTime.js";
+
+let secini = null;
+
+const checkPassword = async () => {
+  const tpass = prompt("秘密鍵のパスワードを入れてください");
+  const pass = new TextEncoder().encode(tpass);
+  const prikey = XOR.convert(coder.decode(secini.encrypt_seckey), pass);
+  const pubkey = coder.encode(sec.pubkey(prikey));
+  if (pubkey != secini.pubkey) {
+    alert("パスワードが違います");
+    return null;
+  }
+  return prikey;
+};
+
+setDropFilesListener(document.body, async (files) => {
+  const file = files[0];
+  if (file.file.name.indexOf("seckey") >= 0) {
+    const bin = await readAsArrayBufferAsync(file.file);
+    const txt = new TextDecoder().decode(bin);
+    const ini = INI.parse(txt);
+    if (!ini.certificate) {
+      alert("証明書がありません。まず証明書付きの秘密鍵をドロップしてください。");
+      return;
+    }
+
+    inname.value = ini.name;
+    inpubkey.value = ini.pubkey;
+    secini = ini;
+  } else if (file.file.name.indexOf("pubkey") >= 0) {
+    const prikey = await checkPassword();
+    if (!prikey) {
+      return;
+    }
+    const bin = await readAsArrayBufferAsync(file.file);
+    const txt = new TextDecoder().decode(bin);
+    const ini = INI.parse(txt);
+    console.log(ini);
+
+    const now = new DateTime();
+    const date = now.toString();
+    const expiredate = now.day.dayAfter(365).toString();
+
+    const data = `${ini.pubkey}(${ini.name}) by ${secini.pubkey}(${secini.name}) ${date}/${expiredate}`;
+    const sign = coder.encode(sec.sign(prikey, new TextEncoder().encode(name)));
+
+    const certificate = `${data} ${sign}`;
+    const data2 = {
+      certificate,
+    };
+    const ini2 = INI.stringify(data2);
+    await downloadFile(ini.name + ".certificate.ini", ini2);
+  } else {
+    const prikey = await checkPassword();
+    if (!prikey) {
+      return;
+    }
+    const bin = new Uint8Array(await readAsArrayBufferAsync(file.file));
+    inhash.value = coder.encode(SHA512.digest(bin));
+    console.log(bin, bin.length);
+    inlen.value = bin.length;
+
+    const now = new DateTime();
+    const date = now.toString();
+    const expiredate = now.day.dayAfter(365).toString();
+
+    const data = {
+      body: `file(${inhash.value},${inlen.value})に同意しました`,
+      signer: `${secini.pubkey}(${secini.name})`,
+      certificate: secini.certificate,
+      date,
+      expiredate,
+    };
+    const sign = coder.encode(sec.sign(prikey, new TextEncoder().encode(JSON.stringify(data))));
+
+    /*
+  [org filename].name.hanko.ini
+    [data]
+    body: file(hash,length) に同意しました
+    signer: pubkey(name)
+    certificate: pubkey(name) by pubkey(city) date/expire sign
+    date: 2023-09-01T08:32JST
+    expired: 2023xx
+    [signature]
+    signature: base32
+    */
+    const data2 = {
+      data,
+      signature: {
+        signature: sign,
+        pubkey: secini.pubkey,
+        name: secini.name,
+      }
+    };
+    console.log(data2);
+    const ini2 = INI.stringify(data2);
+    await downloadFile(file.file.name + ".hanko.ini", ini2);
+  }
+});
+</script>
+
+</body>
+</html>

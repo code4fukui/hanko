@@ -1,0 +1,95 @@
+<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="icon" href="data:">
+<title>Hanko 電子署名ツール</title>
+<link rel="stylesheet" href="style.css">
+</head><body>
+<script type="module" src="https://code4fukui.github.io/input-text/input-text.js"></script>
+
+<h1>Hanko 電子署名ツール</h1>
+<main>
+
+<section>
+<h2>1. 公開鍵・秘密鍵生成</h2>
+<div>
+<span>秘密鍵</span><input-text id="inprikey" class="bin" type="password"></input-text>
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+</div>
+<button id=btngen>公開鍵と秘密鍵を生成する</button><br>
+<div>
+<span>名前</span><input id="inname" class="bin">
+<span>パスワード</span><input type="password" id="inpass" class="bin">
+</div>
+<button id=btndl1>秘密にする、秘密鍵ファイル(名前.seckey.ini)をダウンロードする</button><br>
+<button id=btndl2>市役所へ登録する、公開鍵ファイル(名前.pubkey.ini)をダウンロードする</button><br>
+</section>
+
+</main>
+
+<hr>
+Lib: <a href=https://github.com/code4fukui/sec.js>sec.js</a>, <a href=https://github.com/code4fukui/Base32/>Base32</a>, <a href=https://github.com/code4fukui/input-text/>input-text</a>, <a href=https://github.com/code4fukui/qr-code/>qr-code</a><br>
+<a href=https://github.com/code4fukui/hanko/>src on GitHub</a><br>
+<qr-code></qr-code><br>
+
+<script type="module">
+import * as sec from "https://code4fukui.github.io/sec.js/sec.js";
+import { QRCode } from "https://js.sabae.cc/QRCode.js";
+import { coder } from "./coder.js";
+import { INI } from "https://code4fukui.github.io/INI/INI.js";
+import { downloadFile } from "https://js.sabae.cc/downloadFile.js";
+import { XOR } from "https://code4fukui.github.io/XOR/XOR.js";
+
+btngen.onclick = async () => {
+  if (inprikey.value && !confirm("現在設定されている秘密鍵を消して、生成しなおしますか？")) {
+    return;
+  }
+  const prikey = sec.prikey();
+  const pubkey = sec.pubkey(prikey);
+  inpubkey.value = coder.encode(pubkey);
+  inprikey.value = coder.encode(prikey);
+};
+inprikey.oninput = () => {
+  const prikey = coder.decode(inprikey.value);
+  const pubkey = sec.pubkey(prikey);
+  inpubkey.value = coder.encode(pubkey);
+};
+btndl1.onclick = async () => {
+  /*
+    name: name
+    pubkey: base32
+    encrypt_seckey: base32
+    certificate: pubkey(name) by pubkey(city) date/expire sign
+  */
+  const name = inname.value;
+  const prikey = coder.decode(inprikey.value);
+  const pass = new TextEncoder().encode(inpass.value);
+  const encprikey = coder.encode(XOR.convert(prikey, pass));
+  const data = {
+    name: name,
+    pubkey: inpubkey.value,
+    encrypt_seckey: encprikey,
+  };
+  const ini = INI.stringify(data);
+  console.log(ini);
+  await downloadFile(name + ".seckey.ini", ini);
+};
+btndl2.onclick = async () => {
+  /*
+    data: name
+    pubkey: base32
+    signatue: base32 (signed name)
+  */
+  const name = inname.value;
+  const prikey = coder.decode(inprikey.value);
+  const signature = sec.sign(prikey, new TextEncoder().encode(name));
+  const data = {
+    name: name,
+    pubkey: inpubkey.value,
+    signature: coder.encode(signature),
+  };
+  const ini = INI.stringify(data);
+  console.log(ini);
+  await downloadFile(name + ".pubkey.ini", ini);
+};
+</script>
+
+</body>
+</html>
