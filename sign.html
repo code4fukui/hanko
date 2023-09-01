@@ -140,7 +140,7 @@ setDropFilesListener(document.body, async (files) => {
     };
     console.log(data2);
     const ini2 = INI.stringify(data2);
-    await downloadFile(file.file.name + ".hanko.ini", ini2);
+    await downloadFile(file.file.name + ".hanko.txt", ini2);
   }
 });
 </script>
