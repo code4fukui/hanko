@@ -63,10 +63,12 @@ setDropFilesListener(document.body, async (files) => {
     const bin = await readAsArrayBufferAsync(file.file);
     const txt = new TextDecoder().decode(bin);
     const ini = INI.parse(txt);
+    /*
     if (!ini.certificate) {
       alert("証明書がありません。まず証明書付きの秘密鍵をドロップしてください。");
       return;
     }
+    */
 
     inname.value = ini.name;
     inpubkey.value = ini.pubkey;
