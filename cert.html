@@ -8,17 +8,18 @@
 <main>
 
 <section>
-<h2>3. 証明書登録</h2>
-証明書なし秘密鍵ファイル(name.seckey_no_cert.txt)をここにドロップしてください<br>
+<h2>2. 証明書発行</h2>
+秘密鍵ファイル(name.seckey.txt or name.seckey_no_cert.txt)をここにドロップしてください<br>
 <div>
 <span>名前</span><input id="inname" class="bin">
 <span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
 </div>
-受け取った証明書ファイル(name.certificate.txt)をここにドロップしてください<br>
-<br>
-→ 証明書付きの秘密鍵ファイル(name.seckey.txt)がダウンロードされます（大切に保管してください）<br>
-<br>
-* 証明書なし秘密鍵ファイル(seckey_no_cert.txt)、公開鍵ファイル(pubkey.txt)、証明書ファイル(certificate.txt)は削除してもOKです
+証明書を発行する公開鍵ファイル(name.pubkey.txt)をここにドロップしてください<br>
+</div>
+→ 証明書ファイル（名前.certificate.txt）がダウンロードされます
+<!--
+<button id=btndl1>署名する (名前.hanko.txt をダウンロード)</button><br>
+-->
 </section>
 
 </main>
@@ -37,8 +38,23 @@ import { downloadFile } from "https://js.sabae.cc/downloadFile.js";
 import { XOR } from "https://code4fukui.github.io/XOR/XOR.js";
 import { setDropFilesListener } from "https://js.sabae.cc/setDropFilesListener.js";
 import { readAsArrayBufferAsync } from "https://code4sabae.github.io/js/readAsArrayBufferAsync.js";
+import { SHA512 } from "https://code4fukui.github.io/SHA512/SHA512.js"
+import { DateTime } from "https://js.sabae.cc/DateTime.js";
 
 let secini = null;
+
+const checkPassword = async () => {
+  const tpass = prompt("秘密鍵のパスワードを入れてください");
+  const pass = new TextEncoder().encode(tpass);
+  const prikey = XOR.convert(coder.decode(secini.encrypt_seckey), pass);
+  const pubkey = coder.encode(sec.pubkey(prikey));
+  if (pubkey != secini.pubkey) {
+    alert("パスワードが違います");
+    return null;
+  }
+  return prikey;
+};
+
 setDropFilesListener(document.body, async (files) => {
   const file = files[0];
   if (file.file.name.indexOf("seckey") >= 0) {
@@ -49,27 +65,33 @@ setDropFilesListener(document.body, async (files) => {
     inname.value = ini.name;
     inpubkey.value = ini.pubkey;
     secini = ini;
-  } else if (file.file.name.indexOf("certificate") >= 0) {
+  } else if (file.file.name.indexOf("pubkey") >= 0) {
+    const prikey = await checkPassword();
+    if (!prikey) {
+      return;
+    }
     const bin = await readAsArrayBufferAsync(file.file);
     const txt = new TextDecoder().decode(bin);
     const ini = INI.parse(txt);
     console.log(ini);
 
-    const data = {
-      name: secini.name,
-      pubkey: secini.pubkey,
-      encrypt_seckey: secini.encrypt_seckey,
-      certificate: ini.certificate,
+    const now = new DateTime();
+    const date = now.toString();
+    const expiredate = now.day.dayAfter(365).toString();
+
+    const data = `${ini.pubkey}(${ini.name}) by ${secini.pubkey}(${secini.name}) ${date}/${expiredate}`;
+    const sign = coder.encode(sec.sign(prikey, new TextEncoder().encode(data)));
+
+    const certificate = `${data} ${sign}`;
+    const data2 = {
+      certificate,
     };
-    console.log(data);
-    const ini2 = INI.stringify(data);
-    console.log(ini2);
-    await downloadFile(secini.name + ".seckey.txt", ini2);
+    const ini2 = INI.stringify(data2);
+    await downloadFile(ini.name + ".certificate.txt", ini2);
   } else {
-    alert("無効なファイルです");
+    alert("未対応のファイルです");
   }
 });
-
 </script>
 
 </body>

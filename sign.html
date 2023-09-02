@@ -8,8 +8,8 @@
 <main>
 
 <section>
-<h2>3. 電子署名</h2>
-秘密鍵ファイル(name.seckey.ini)をここにドロップしてください<br>
+<h2>4. 電子署名</h2>
+秘密鍵ファイル(name.seckey.txt)をここにドロップしてください<br>
 <div>
 <span>名前</span><input id="inname" class="bin">
 <span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
@@ -19,8 +19,9 @@
 <span>ハッシュ</span><input-text id="inhash" class="bin"></input-text>
 <span>長さ</span><input id="inlen" class="bin">
 </div>
+→ 電子署名ファイル（名前.hanko.txt）がダウンロードされます
 <!--
-<button id=btndl1>署名する (名前.hanko.ini をダウンロード)</button><br>
+<button id=btndl1>署名する (名前.hanko.txt をダウンロード)</button><br>
 -->
 </section>
 
@@ -63,39 +64,14 @@ setDropFilesListener(document.body, async (files) => {
     const bin = await readAsArrayBufferAsync(file.file);
     const txt = new TextDecoder().decode(bin);
     const ini = INI.parse(txt);
-    /*
     if (!ini.certificate) {
-      alert("証明書がありません。まず証明書付きの秘密鍵をドロップしてください。");
+      alert("秘密鍵ファイルに証明書がありません。まず証明書付きの秘密鍵をドロップしてください。");
       return;
     }
-    */
 
     inname.value = ini.name;
     inpubkey.value = ini.pubkey;
     secini = ini;
-  } else if (file.file.name.indexOf("pubkey") >= 0) {
-    const prikey = await checkPassword();
-    if (!prikey) {
-      return;
-    }
-    const bin = await readAsArrayBufferAsync(file.file);
-    const txt = new TextDecoder().decode(bin);
-    const ini = INI.parse(txt);
-    console.log(ini);
-
-    const now = new DateTime();
-    const date = now.toString();
-    const expiredate = now.day.dayAfter(365).toString();
-
-    const data = `${ini.pubkey}(${ini.name}) by ${secini.pubkey}(${secini.name}) ${date}/${expiredate}`;
-    const sign = coder.encode(sec.sign(prikey, new TextEncoder().encode(name)));
-
-    const certificate = `${data} ${sign}`;
-    const data2 = {
-      certificate,
-    };
-    const ini2 = INI.stringify(data2);
-    await downloadFile(ini.name + ".certificate.ini", ini2);
   } else {
     const prikey = await checkPassword();
     if (!prikey) {
@@ -120,7 +96,7 @@ setDropFilesListener(document.body, async (files) => {
     const sign = coder.encode(sec.sign(prikey, new TextEncoder().encode(JSON.stringify(data))));
 
     /*
-  [org filename].name.hanko.ini
+  [org filename].name.hanko.txt
     [data]
     body: file(hash,length) に同意しました
     signer: pubkey(name)
@@ -138,9 +114,8 @@ setDropFilesListener(document.body, async (files) => {
         name: secini.name,
       }
     };
-    console.log(data2);
     const ini2 = INI.stringify(data2);
-    await downloadFile(file.file.name + ".hanko.txt", ini2);
+    await downloadFile(file.file.name + "." + secini.name + ".hanko.txt", ini2);
   }
 });
 </script>

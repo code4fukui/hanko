@@ -8,20 +8,21 @@
 <main>
 
 <section>
-<h2>4. 検証</h2>
-電子署名ファイル(name.hanko.ini)をここにドロップしてください<br>
-<div>
-<span>名前</span><input id="inname" class="bin">
-<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
-</div>
+<h2>5. 検証</h2>
 電子署名されたファイルをここにドロップしてください<br>
 <div>
 <span>ハッシュ</span><input-text id="inhash" class="bin"></input-text>
 <span>長さ</span><input id="inlen" class="bin">
+</div>
+<br>
+電子署名ファイル(*.hanko.txt)をここにドロップしてください<br>
+<div>
+<span>名前</span><input id="inname" class="bin">
+<span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+<span>証明書発行元 名前</span><input id="innamec" class="bin">
+<span>証明書発行元 公開鍵</span><input-text id="inpubkeyc" class="bin"></input-text>
 <span>検証結果</span><input id=out_verify>
-<!--
-<button id=btndl1>署名する (名前.hanko.ini をダウンロード)</button><br>
--->
+</div>
 </section>
 
 </main>
@@ -43,27 +44,47 @@ import { readAsArrayBufferAsync } from "https://code4sabae.github.io/js/readAsAr
 import { SHA512 } from "https://code4fukui.github.io/SHA512/SHA512.js"
 import { DateTime } from "https://js.sabae.cc/DateTime.js";
 
-let pubini = null;
+const verifyCert = (cert) => {
+  /*
+  const data = `${ini.pubkey}(${ini.name}) by ${secini.pubkey}(${secini.name}) ${date}/${expiredate}`;
+  const sign = coder.encode(sec.sign(prikey, new TextEncoder().encode(name)));
+  const certificate = `${data} ${sign}`;
+  */
+  const parse = (pubname) => {
+    const n = pubname.indexOf("(");
+    const key = coder.decode(pubname.substring(0, n));
+    const name = pubname.substring(n + 1, pubname.length - 1);
+    return [key, name];
+  };
+  const p = cert.split(" ");
+  const [pubkey1, name1] = parse(p[0]);
+  const [pubkey2, name2] = parse(p[2]);
+  const [date, expiredate] = p[3].split("/");
+  const sign = coder.decode(p[4]);
+  const sdata = cert.substring(0, cert.lastIndexOf(" "));
+  console.log(sdata);
+  const data = new TextEncoder().encode(sdata);
+  const v = sec.verify(sign, pubkey2, data);
+  if (!v) {
+    return null;
+  }
+  return { pubkey1, name1, pubkey2, name2 };
+};
+let bin = null;
 
 setDropFilesListener(document.body, async (files) => {
   const file = files[0];
   if (file.file.name.indexOf("hanko") >= 0) {
-    const bin = await readAsArrayBufferAsync(file.file);
-    const txt = new TextDecoder().decode(bin);
+    const hbin = await readAsArrayBufferAsync(file.file);
+    const txt = new TextDecoder().decode(hbin);
     const ini = INI.parse(txt);
 
     inname.value = ini.signature.name;
     inpubkey.value = ini.signature.pubkey;
-    pubini = ini;
-  } else {
-    const bin = new Uint8Array(await readAsArrayBufferAsync(file.file));
-    inhash.value = coder.encode(SHA512.digest(bin));
-    console.log(bin, bin.length);
-    inlen.value = bin.length;
 
-    const sign = coder.decode(pubini.signature.signature);
-    const pubkey = coder.decode(pubini.signature.pubkey);
-    const d = pubini.data;
+    const sign = coder.decode(ini.signature.signature);
+    const pubkey = coder.decode(ini.signature.pubkey);
+    const d = ini.data;
     const data = {
       body: `file(${inhash.value},${inlen.value})に同意しました`,
       signer: d.signer,
@@ -71,10 +92,34 @@ setDropFilesListener(document.body, async (files) => {
       date: d.date,
       expiredate: d.expiredate,
     };
-    console.log(pubini.data)
+
+    if (data.body != d.body) {
+      alert("ファイルが異なります");
+      return;
+    }
+
+    const v = verifyCert(d.certificate);
+    if (!v) {
+      alert("証明書が不正です");
+      return;
+    }
+    if (coder.encode(v.pubkey1) != ini.signature.pubkey) {
+      alert("証明書が不正です");
+      return;
+    }
+    innamec.value = v.name2;
+    inpubkeyc.value = coder.encode(v.pubkey2);
 
     const verify = sec.verify(sign, pubkey, new TextEncoder().encode(JSON.stringify(data)));
-    out_verify.value = verify ? "OK! 検証できました" : "NG... 検証できませんでした";
+    if (!verify) {
+      alert("電子署名が不正です");
+      return;
+    }
+    out_verify.value = "電子署名が検証できました";
+  } else {
+    bin = new Uint8Array(await readAsArrayBufferAsync(file.file));
+    inhash.value = coder.encode(SHA512.digest(bin));
+    inlen.value = bin.length;
   }
 });
 </script>

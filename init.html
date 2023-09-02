@@ -18,8 +18,8 @@
 <span>名前</span><input id="inname" class="bin">
 <span>パスワード</span><input type="password" id="inpass" class="bin">
 </div>
-<button id=btndl1>秘密にする、秘密鍵ファイル(名前.seckey.ini)をダウンロードする</button><br>
-<button id=btndl2>市役所へ登録する、公開鍵ファイル(名前.pubkey.ini)をダウンロードする</button><br>
+<button id=btndl1>秘密にする、証明書なし秘密鍵ファイル(名前.seckey_no_cert.txt)をダウンロードする</button><br>
+<button id=btndl2>証明書発行元へ登録する、公開鍵ファイル(名前.pubkey.txt)をダウンロードする</button><br>
 </section>
 
 </main>
@@ -38,9 +38,6 @@ import { downloadFile } from "https://js.sabae.cc/downloadFile.js";
 import { XOR } from "https://code4fukui.github.io/XOR/XOR.js";
 
 btngen.onclick = async () => {
-  if (inprikey.value && !confirm("現在設定されている秘密鍵を消して、生成しなおしますか？")) {
-    return;
-  }
   const prikey = sec.prikey();
   const pubkey = sec.pubkey(prikey);
   inpubkey.value = coder.encode(pubkey);
@@ -52,6 +49,10 @@ inprikey.oninput = () => {
   inpubkey.value = coder.encode(pubkey);
 };
 btndl1.onclick = async () => {
+  if (!inname.value) {
+    alert("名前をご記入ください");
+    return;
+  }
   /*
     name: name
     pubkey: base32
@@ -69,9 +70,13 @@ btndl1.onclick = async () => {
   };
   const ini = INI.stringify(data);
   console.log(ini);
-  await downloadFile(name + ".seckey.ini", ini);
+  await downloadFile(name + ".seckey_no_cert.txt", ini);
 };
 btndl2.onclick = async () => {
+  if (!inname.value) {
+    alert("名前をご記入ください");
+    return;
+  }
   /*
     data: name
     pubkey: base32
@@ -86,8 +91,7 @@ btndl2.onclick = async () => {
     signature: coder.encode(signature),
   };
   const ini = INI.stringify(data);
-  console.log(ini);
-  await downloadFile(name + ".pubkey.ini", ini);
+  await downloadFile(name + ".pubkey.txt", ini);
 };
 </script>
 
