@@ -19,6 +19,7 @@
 <div>
 <span>名前</span><input id="inname" class="bin">
 <span>公開鍵</span><input-text id="inpubkey" class="bin"></input-text>
+<span>署名日時</span><input id="indate" class="bin">
 <span>証明書発行元 名前</span><input id="innamec" class="bin">
 <span>証明書発行元 公開鍵</span><input-text id="inpubkeyc" class="bin"></input-text>
 <span>検証結果</span><input id=out_verify>
@@ -81,6 +82,7 @@ setDropFilesListener(document.body, async (files) => {
 
     inname.value = ini.signature.name;
     inpubkey.value = ini.signature.pubkey;
+    indate.value = ini.data.date;
 
     const sign = coder.decode(ini.signature.signature);
     const pubkey = coder.decode(ini.signature.pubkey);
