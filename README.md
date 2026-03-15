@@ -1,5 +1,7 @@
 # Hanko - Electronic Signature Tool
 
+> 日本語のREADMEはこちらです: [README.ja.md](README.ja.md)
+
 A tool for electronically signing documents.
 
 ## Demo
