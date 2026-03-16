@@ -31,4 +31,4 @@ This project uses the following libraries:
 - [qr-code](https://github.com/code4fukui/qr-code)
 
 ## License
-Not specified
+MIT License — see [LICENSE](LICENSE).
